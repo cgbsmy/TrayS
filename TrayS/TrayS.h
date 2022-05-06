@@ -133,6 +133,12 @@ DWORD m_last_in_bytes = 0;//总上一秒下载速度
 DWORD m_last_out_bytes = 0;//总上一秒上传速度
 DWORD s_in_byte = 0;//总下载速度
 DWORD s_out_byte = 0;//总上传速度
+/*
+int rNum=60;
+DWORD s_in_bytes[60];//一分钟内的下载数据
+DWORD s_out_bytes[60];//一分钟内的上传数据
+int iBytes = 0;//当前数据指针
+*/
 int mWidth;//工具窗口宽度
 int mHeight;//工具窗口竖排高度
 int iDPI = 96;//当前DPI

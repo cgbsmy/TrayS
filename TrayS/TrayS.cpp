@@ -1543,7 +1543,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	LoadString(hInst, IDS_TIPS, nid.szTip, 88);
 	if (TraySave.bTrayIcon)
 		pShell_NotifyIcon(NIM_ADD, &nid);
-	MemoryStatusEx.dwLength = sizeof MEMORYSTATUSEX;	
+	MemoryStatusEx.dwLength = sizeof MEMORYSTATUSEX;
+	GlobalMemoryStatusEx(&MemoryStatusEx);
 	if (TraySave.bMonitor)
 	{
 		AdjustWindowPos();
@@ -2410,10 +2411,54 @@ INT_PTR CALLBACK TaskTipsProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			MoveToEx(mdc, crc.right * 92 / 100, wTipsHeight * (nTraffic + 10), NULL);
 			LineTo(mdc, crc.right * 92 / 100, wTipsHeight * (nTraffic + 10 + 2));
 
+/*
+			DeleteObject(hp);
+			rc.bottom = wTipsHeight*nTraffic;
+			rc.top = 1;
+			rc.left = 5;
+			rc.right = crc.right-5;
+			DWORD max = 0;
+			for (int in=0;in<rNum;in++)
+			{
+				if (max < s_in_bytes[in])
+					max = s_in_bytes[in];
+			}
+			for (int out = 0; out < rNum; out++)
+			{
+				if (max < s_out_bytes[out])
+					max = s_out_bytes[out];
+			}
+			if (max == 0)
+				max = 100;
+			hp = CreatePen(PS_DOT, 1, RGB(128, 255, 0));
+			oldpen = (HPEN)SelectObject(mdc, hp);
+			MoveToEx(mdc, rc.left, rc.bottom, NULL);
+			for (int e=1;e<= rNum;e++)
+			{
+				int x = iBytes + e-1;
+				if (x >= rNum)
+					x -= rNum;
+				LineTo(mdc, rc.left + (rc.right - rc.left) * e / rNum, rc.bottom - double((rc.bottom - rc.top) * s_out_bytes[x] / max ));
+			}
 			SelectObject(mdc, oldpen);
 			DeleteObject(hp);
-			rc.bottom = wTipsHeight;
+
+			hp = CreatePen(PS_SOLID, 1, RGB(255, 128, 0));
+			oldpen = (HPEN)SelectObject(mdc, hp);
+			MoveToEx(mdc, rc.left, rc.bottom, NULL);
+			for (int e = 1; e <= rNum; e++)
+			{
+				int x = iBytes + e - 1;
+				if (x >= rNum)
+					x -= rNum;
+				LineTo(mdc, rc.left + (rc.right - rc.left) *e / rNum, rc.bottom - double((rc.bottom - rc.top) * s_in_bytes[x] / max ));
+			}
+*/
+
+			SelectObject(mdc, oldpen);
+			DeleteObject(hp);
 			rc.top = 0;
+/*
 			int cx;
 			if (wTipsHeight < 24)
 				cx = 16;
@@ -2427,9 +2472,11 @@ INT_PTR CALLBACK TaskTipsProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				cx = 64;
 			else
 				cx = 128;
+*/
 			//			OffsetRect(&rc, 0, DPI(16)*3);
 						//PIP_ADAPTER_INFO pai = &ipinfo[0];
 			//			PIP_ADAPTER_ADDRESSES paa = &piaa[0];
+			rc.bottom = wTipsHeight;
 			for (int i = 0; i < nTraffic; i++)
 			{
 				rc.left = 5;// +wTipsHeight;
@@ -3203,7 +3250,7 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 {
 	switch (message)
 	{
-	case WM_INITDIALOG:
+	case WM_INITDIALOG:		
 		return (INT_PTR)TRUE;
 	case WM_COMMAND:
 		if (LOWORD(wParam) >= IDC_SELECT_ALL && LOWORD(wParam) <= IDC_SELECT_ALL + 99)
@@ -3263,6 +3310,10 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 	{
 		if (!IsWindowVisible(hTaskTips)&&TraySave.bMonitorTips)
 		{
+/*
+			if (s_in_byte == 0)
+				return FALSE;
+*/
 			if (!IsWindow(hTaskTips))
 			{
 				hTaskTips = ::CreateDialog(hInst, MAKEINTRESOURCE(IDD_TIPS), NULL, (DLGPROC)TaskTipsProc);
@@ -3657,6 +3708,14 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 						{
 							s_in_byte = m_in_bytes - m_last_in_bytes;
 							s_out_byte = m_out_bytes - m_last_out_bytes;
+/*
+							s_in_bytes[iBytes] = s_in_byte / 1024;
+							s_out_bytes[iBytes] = s_out_byte / 1024;
+							if (iBytes == rNum-1)
+								iBytes = 0;
+							else
+								++iBytes;
+*/
 						}
 						m_last_out_bytes = m_out_bytes;
 						m_last_in_bytes = m_in_bytes;
