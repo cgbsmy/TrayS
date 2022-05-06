@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include "resource.h"
 #include "function.h"
 #include <Commdlg.h>
