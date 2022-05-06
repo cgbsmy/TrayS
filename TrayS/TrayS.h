@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+//////////////////////////////cgbsmy
 #include "resource.h"
 #include "function.h"
 #include <Commdlg.h>
