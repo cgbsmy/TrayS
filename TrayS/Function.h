@@ -5,6 +5,7 @@
 #include <audiopolicy.h>
 #include <Shlobj.h>
 #include <tlhelp32.h>
+#include <commctrl.h>
 //GDI+
 #include<gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
@@ -104,4 +105,5 @@ BOOL		pCreateEnvironmentBlock(_At_((PZZWSTR*)lpEnvironment, _Outptr_)LPVOID* lpE
 ULONG		pCallNtPowerInformation(_In_ POWER_INFORMATION_LEVEL InformationLevel, _In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer, _In_ ULONG InputBufferLength, _Out_writes_bytes_opt_(OutputBufferLength) PVOID OutputBuffer, _In_ ULONG OutputBufferLength);
 int			DrawShadowText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT uFormat, COLORREF bColor, BOOL bYes);//绘制阴影文字
 DWORD		GetSystemUsesLightTheme();//获取系统主题颜色模式
+BOOL		pChangeWindowMessageFilter(UINT message, DWORD dwFlag);
 UINT		pGetDpiForWindow(HWND hWnd);

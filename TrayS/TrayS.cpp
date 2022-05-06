@@ -512,11 +512,13 @@ int GetCPUUseRate()
 }
 void ReadReg()//读取设置
 {
+/*
 	if (rovi.dwBuildNumber > 22000)
 	{
 		TraySave.bAlpha[0] = 188;
 		TraySave.bAlpha[1] = 208;
 	}
+*/
 	SetToCurrentPath();
 	HANDLE hFile = CreateFile(szTraySave, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_ARCHIVE, NULL);
 	if (hFile)
@@ -662,6 +664,8 @@ void GetShellAllWnd()
 		hTaskWnd = FindWindowEx(hReBarWnd, NULL, L"MSTaskSwWClass", NULL);
 	if(hTaskWnd)
 		hTaskListWnd = FindWindowEx(hTaskWnd, NULL, L"MSTaskListWClass", NULL);
+	if(!hTaskListWnd)
+		hTaskListWnd = FindWindowEx(hTaskWnd, NULL, L"ToolbarWindow32", NULL);
 	hWin11UI = FindWindowEx(hTray, 0, L"Windows.UI.Composition.DesktopWindowContentBridge", NULL);
 	if(hTrayNotifyWnd)
 		hTrayClockWnd = FindWindowEx(hTrayNotifyWnd, NULL, L"TrayClockWClass", NULL);
@@ -697,9 +701,11 @@ void OpenTimeDlg()
 		{
 			hTime = ::CreateDialog(hInst, MAKEINTRESOURCE(IDD_TIME), NULL, (DLGPROC)TimeProc);
 			SetWindowLongPtr(hTime, GWL_EXSTYLE, GetWindowLongPtr(hTime, GWL_EXSTYLE) | WS_EX_LAYERED|WS_EX_TRANSPARENT);
+/*
 			if(bThemeMode&&rovi.dwBuildNumber>22000)
 				SetLayeredWindowAttributes(hTime, RGB(254,254,255), 0, LWA_COLORKEY);
 			else
+*/
 				SetLayeredWindowAttributes(hTime, RGB(0, 0, 1), 0, LWA_COLORKEY);
 			SetParent(hTime, hTray);
 		}
@@ -730,7 +736,7 @@ void OpenTaskBar()
 			}
 			else
 			{
-				if (rovi.dwBuildNumber <= 22000||bFullScreen)
+//				if (rovi.dwBuildNumber <= 22000||bFullScreen)
 				{
 					if (TraySave.cMonitorColor[0] == RGB(0, 0, 1) || TraySave.cMonitorColor[0] == 0)
 					{
@@ -738,8 +744,18 @@ void OpenTaskBar()
 						TraySave.bMonitorFuse = TRUE;
 					}
 					else
+					{
+/*
+						if (rovi.dwBuildNumber >= 22000)
+						{
+							SetWindowLongPtr(hTaskBar, GWL_EXSTYLE, GetWindowLongPtr(hTaskBar, GWL_EXSTYLE) | WS_EX_LAYERED);
+							SetLayeredWindowAttributes(hTaskBar, RGB(0, 0, 1), 128, LWA_COLORKEY | LWA_ALPHA);
+						}
+*/
 						bShadow = FALSE;
+					}
 				}
+/*
 				else
 				{
 					bShadow = FALSE;
@@ -751,6 +767,7 @@ void OpenTaskBar()
 					else
 						SetLayeredWindowAttributes(hTaskBar, RGB(0, 0, 1), 128, LWA_COLORKEY | LWA_ALPHA);
 				}
+*/
 				if(!bFullScreen)
 					SetParent(hTaskBar, hTray);
 			}
@@ -1254,9 +1271,9 @@ void SetTaskScheduler(BOOL bAdd)
 */
 #ifndef _DEBUG
 extern "C" void WinMainCRTStartup() {
-	ChangeWindowMessageFilter(WM_TRAYS, MSGFLT_ADD);
-	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
-	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+	pChangeWindowMessageFilter(WM_TRAYS, MSGFLT_ADD);
+	pChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+	pChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
 	LPWSTR lpCmdLine = GetCommandLine();
 	LPWSTR lpP=NULL;
 	int iLen = lstrlen(lpCmdLine);
@@ -2126,8 +2143,10 @@ void AdjustWindowPos()//设置信息窗口位置大小
 			//		if (!hWin11UI)
 			if(!bFullScreen)
 				ntop -= trayrc.top;
+/*
 			if (hWin11UI)
 				ntop += 1;
+*/
 			if (nleft != otleft || ottop != ntop)
 			{
 				/*
@@ -2266,6 +2285,8 @@ INT_PTR CALLBACK TaskTipsProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		POINT pt;
 		pt.x = GET_X_LPARAM(lParam);
 		pt.y = GET_Y_LPARAM(lParam);
+		if (pt.y == 0)
+			pt.y = 1;
 		if (pt.y < nTraffic * wTipsHeight)
 			RunProcess(NULL, szNetCpl);
 		else if (pt.y < (nTraffic + 10) * wTipsHeight)
@@ -2320,14 +2341,17 @@ INT_PTR CALLBACK TaskTipsProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				{
 					WCHAR wDrive[MAX_PATH];
 					DWORD dwLen = GetLogicalDriveStrings(MAX_PATH, wDrive);
-					DWORD driver_number = dwLen / 4;
-					DWORD x = pt.x / ((rc.right - rc.right * 8 / 100) / driver_number);
-					if (x < driver_number)
+					if (dwLen != 0)
 					{
-						WCHAR sz[24];
-						memset(sz, 0, 48);
-						wsprintf(sz, L"o%s", &wDrive[x * 4]);
-						RunProcess(NULL, sz);
+						DWORD driver_number = dwLen / 4;
+						DWORD x = pt.x / ((rc.right - rc.right * 8 / 100) / driver_number);
+						if (x < driver_number)
+						{
+							WCHAR sz[24];
+							memset(sz, 0, 48);
+							wsprintf(sz, L"o%s", &wDrive[x * 4]);
+							RunProcess(NULL, sz);
+						}
 					}
 				}
 				else
@@ -2655,36 +2679,41 @@ INT_PTR CALLBACK TaskTipsProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			*/
 			WCHAR wDrive[MAX_PATH];
 			DWORD dwLen = GetLogicalDriveStrings(MAX_PATH, wDrive);
-			DWORD driver_number = dwLen / 4;
-			rc.left = crc.right * 8 / 100 + 3;
-			int dw = crc.right * 84 / 100 / driver_number - 2;
-			rc.right = rc.left + dw;
-			rc.top += 3;
-			rc.bottom -= 1;
-			for (DWORD nIndex = 0; nIndex < driver_number; nIndex++)
+			if (dwLen != 0)
 			{
-				LPWSTR dName = wDrive + nIndex * 4;
-				UINT64 lpFreeBytesAvailable = 0;
-				UINT64 lpTotalNumberOfBytes = 0;
-				UINT64 lpTotalNumberOfFreeBytes = 0;
-				if (GetDriveType(dName) != DRIVE_CDROM)
+				DWORD driver_number = dwLen / 4;
+				rc.left = crc.right * 8 / 100 + 3;
+				int dw = crc.right * 84 / 100 / driver_number - 2;
+				rc.right = rc.left + dw;
+				rc.top += 3;
+				rc.bottom -= 1;
+				for (DWORD nIndex = 0; nIndex < driver_number; nIndex++)
 				{
-					GetDiskFreeSpaceEx(dName, (PULARGE_INTEGER)&lpFreeBytesAvailable, (PULARGE_INTEGER)&lpTotalNumberOfBytes, (PULARGE_INTEGER)&lpTotalNumberOfFreeBytes);
-					RECT frc = rc;
-					if (nIndex + 1 == driver_number)
-						rc.right = crc.right * 92 / 100 - 2;
-					frc.right = frc.left + (rc.right - rc.left) * (lpTotalNumberOfBytes - lpTotalNumberOfFreeBytes) / lpTotalNumberOfBytes;
-					FillRect(mdc, &rc, hb1);
-					if (lpTotalNumberOfFreeBytes < lpTotalNumberOfBytes * 1 / 10)
-						FillRect(mdc, &frc, hb2);
-					else
-						FillRect(mdc, &frc, hb3);
-					dName[2] = 0;
+					LPWSTR dName = wDrive + nIndex * 4;
+					UINT64 lpFreeBytesAvailable = 0;
+					UINT64 lpTotalNumberOfBytes = 0;
+					UINT64 lpTotalNumberOfFreeBytes = 0;
+					if (GetDriveType(dName) != DRIVE_CDROM&&dName[0]!=L'A')
+					{
+						if (GetDiskFreeSpaceEx(dName, (PULARGE_INTEGER)&lpFreeBytesAvailable, (PULARGE_INTEGER)&lpTotalNumberOfBytes, (PULARGE_INTEGER)&lpTotalNumberOfFreeBytes))
+						{
+							RECT frc = rc;
+							if (nIndex + 1 == driver_number)
+								rc.right = crc.right * 92 / 100 - 2;
+							frc.right = frc.left + (rc.right - rc.left) * (lpTotalNumberOfBytes - lpTotalNumberOfFreeBytes) / lpTotalNumberOfBytes;
+							FillRect(mdc, &rc, hb1);
+							if (lpTotalNumberOfFreeBytes < lpTotalNumberOfBytes * 1 / 10)
+								FillRect(mdc, &frc, hb2);
+							else
+								FillRect(mdc, &frc, hb3);
+						}
+						dName[2] = 0;
+					}
+					DrawText(mdc, dName, lstrlen(dName), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+					OffsetRect(&rc, dw + 2, 0);
+					if (rc.right - 3 > crc.right * 92 / 100)
+						break;
 				}
-				DrawText(mdc, dName, lstrlen(dName), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-				OffsetRect(&rc, dw + 2, 0);
-				if (rc.right - 3 > crc.right * 92 / 100)
-					break;
 			}
 			rc.top -= 2;
 			rc.bottom -= 2;
@@ -3172,8 +3201,8 @@ INT_PTR CALLBACK TimeProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		if (bThemeMode != 0)
 		{
 			rgb = RGB(8, 8, 8);
-			if(rovi.dwBuildNumber>22000)
-				cBack = RGB(254, 254, 255);
+//			if(rovi.dwBuildNumber>22000)
+//				cBack = RGB(254, 254, 255);
 		}
 		if (hWin11UI)
 		{
@@ -3752,9 +3781,10 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			}
 			if (IsWindow(hTaskBar))
 				::InvalidateRect(hTaskBar, NULL, TRUE);
-			if (rovi.dwBuildNumber == 22000)
+			if (rovi.dwBuildNumber >= 22000)//&&TraySave.cMonitorColor[0]==RGB(0,0,1))
 			{
-				RECT src, frc;
+/*
+				RECT src,frc;
 				DWORD pid1, pid2;
 				HWND fwnd = GetForegroundWindow();
 				GetWindowThreadProcessId(fwnd, &pid1);
@@ -3762,6 +3792,8 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 				GetScreenRect(hDlg, &src, FALSE);
 				GetWindowRect(fwnd, &frc);
 				if (EqualRect(&src, &frc) == 0 || pid1 == pid2)
+*/
+				if(!bFullScreen)
 				{
 					POINT pt;
 					GetCursorPos(&pt);
@@ -3797,9 +3829,11 @@ INT_PTR CALLBACK TaskBarProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 			else
 			{
 
+/*
 				if(bThemeMode&&!TraySave.bMonitorFloat&&rovi.dwBuildNumber>22000)
 					hb=CreateSolidBrush(RGB(222,222,223));
 				else
+*/
 					hb = CreateSolidBrush(RGB(0, 0,1));
 			}
 			FillRect(mdc, &rc, hb);
@@ -4166,7 +4200,6 @@ INT_PTR CALLBACK MainProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					if (bFullScreen)
 					{
 						DestroyWindow(hTaskBar);
-						bFullScreen = FALSE;
 					}
 				}
 				else
@@ -4174,10 +4207,10 @@ INT_PTR CALLBACK MainProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					if (!bFullScreen)
 					{
 						DestroyWindow(hTaskBar);
-						bFullScreen = TRUE;
 					}
 				}
 			}
+			bFullScreen = lParam;
 		}
 		break;
 	case WM_INITDIALOG:
@@ -4792,7 +4825,7 @@ INT_PTR CALLBACK SettingProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPar
 							if (TraySave.cMonitorColor[0] == 0 || TraySave.cMonitorColor[0] == RGB(0, 0, 1))
 							{
 								TraySave.cMonitorColor[0] = RGB(0, 0, 1);
-								if (TraySave.bMonitorFloat||rovi.dwBuildNumber<=22000)
+//								if (TraySave.bMonitorFloat||rovi.dwBuildNumber<=22000)
 								{
 									bShadow = TRUE;
 									TraySave.bMonitorFuse = TRUE;

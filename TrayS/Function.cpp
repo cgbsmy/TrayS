@@ -607,7 +607,7 @@ DWORD GetParentProcessID(DWORD dwProcessId)//获取父进程ID
 	CloseHandle(hProcess);
 	return dwParentPID;
 }
-BOOL GetSetVolume(BOOL bSet, HWND hWnd, DWORD dwProcessId, float* fVolume, BOOL* bMute, BOOL IsMixer)
+BOOL GetSetVolume(BOOL bSet, HWND hWnd, DWORD dwProcessId, float* fVolume, BOOL* bMute, BOOL IsMixer)///////////////////////////获取/设置窗口音量
 {
 	DWORD dwCProcessId = -1;
 	if (hWnd)
@@ -752,7 +752,7 @@ BOOL IsUserAdmin()//判断是以管理员权限运行
 	}
 	return(b);
 }
-void SetToCurrentPath()
+void SetToCurrentPath()////////////////////////////////////设置当前程序为当前目录
 {
 	WCHAR szDir[MAX_PATH];
 	GetModuleFileName(NULL, szDir, MAX_PATH);
@@ -767,7 +767,7 @@ void SetToCurrentPath()
 		}
 	}
 }
-BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine)
+BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine)/////////////////////////////////运行程序
 {
 	BOOL ret = FALSE;
 	STARTUPINFO StartInfo;
@@ -1023,7 +1023,7 @@ BOOL GetWindowCompositionAttribute(HWND hWnd, ACCENT_POLICY * accent)
 	return ret;
 }
 */
-BOOL GetProcessFileName(DWORD dwProcessId, LPTSTR pszFileName, DWORD dwFileNameLength)
+BOOL GetProcessFileName(DWORD dwProcessId, LPTSTR pszFileName, DWORD dwFileNameLength)////////////////////////通过ID获取程序路径文件名
 {
 	BOOL bResult = false;
 	HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, dwProcessId);
@@ -1055,7 +1055,7 @@ BOOL GetProcessFileName(DWORD dwProcessId, LPTSTR pszFileName, DWORD dwFileNameL
 	}
 	return bResult;
 }
-bool GetFileNameFromWindowHandle(HWND hWnd, LPTSTR lpFileName, DWORD dwFileNameLength)
+bool GetFileNameFromWindowHandle(HWND hWnd, LPTSTR lpFileName, DWORD dwFileNameLength)////////////////用窗口获取程序路径文件名
 {
 	bool bResult = false;
 	DWORD dwProcessId = 0;
@@ -1088,7 +1088,8 @@ typedef struct PACKAGE_ID {
 } PACKAGE_ID;
 #define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
 #define ARRAY_SIZEOF(array) (sizeof(array)/sizeof(array[0]))
-HICON GetUWPAppIcon(HWND hWnd, UINT uiIconSize = 32) {
+HICON GetUWPAppIcon(HWND hWnd, UINT uiIconSize = 32)////////////////////////////////////获取UWP程序图标
+{
 	HICON hIcon = NULL;
 	static LONG(WINAPI * pGetPackageFullName)(HANDLE, UINT32*, PWSTR);
 	static LONG(WINAPI * pGetPackagePathByFullName)(PCWSTR, UINT32*, PWSTR);
@@ -1279,7 +1280,7 @@ HICON GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd,int IconSize)
 	*/
 	return hIcon;
 }
-BOOL SetForeground(HWND hWnd)
+BOOL SetForeground(HWND hWnd)//激活窗口为前台
 {
 	bool bResult = false;
 	bool bHung = IsHungAppWindow(hWnd) != 0;
@@ -1379,7 +1380,7 @@ BOOL OpenProcessPath(DWORD dwProcessId)//通过进程ID打开进程的路径
 	}
 	return ret;
 }
-BOOL OpenWindowPath(HWND hWnd)
+BOOL OpenWindowPath(HWND hWnd)//////////////通过窗口打开进程的路径
 {
 	BOOL ret = FALSE;
 	DWORD dwProcessId;
@@ -1388,7 +1389,7 @@ BOOL OpenWindowPath(HWND hWnd)
 		ret = OpenProcessPath(dwProcessId);
 	return ret;
 }
-HICON OpenProcessIcon(DWORD dProcessID, int cx)//通过进程ID ICON
+HICON OpenProcessIcon(DWORD dProcessID, int cx)//通过进程ID获取ICON
 {
 	HICON ret = NULL;
 	WCHAR szExe[MAX_PATH];
@@ -1420,9 +1421,8 @@ HICON GetIconForCSIDL(int csidl)
 }
 int DrawShadowText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT uFormat,COLORREF bColor,BOOL bYes)//绘制阴影文字
 {
-	//	COLORREF cColor = GetTextColor(hDC);
-	//	return DrawShadowText(hDC, lpString, nCount, lpRect, uFormat, cColor, RGB(066, 66,66), 1, 1);	
-//	return DrawText(hDC, lpString, nCount, lpRect, uFormat);
+//	COLORREF cColor = GetTextColor(hDC);
+//	return DrawShadowText(hDC, lpString, nCount, lpRect, uFormat, cColor, RGB(18, 18,18), 1, 1);	
 	if (bYes)
 	{
 		COLORREF cColor = GetTextColor(hDC);
@@ -1439,7 +1439,6 @@ int DrawShadowText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT uF
 		DrawText(hDC, lpString, nCount, lpRect, uFormat);
 		OffsetRect(lpRect, 0, -2);
 		SetTextColor(hDC, cColor);
-		//		DrawText(hDC, lpString, nCount, lpRect, uFormat);
 	}
 	return DrawText(hDC, lpString, nCount, lpRect, uFormat);
 }
@@ -1457,6 +1456,14 @@ DWORD GetSystemUsesLightTheme()
 		RegCloseKey(pKey);		
 	}
 	return dm;
+}
+BOOL pChangeWindowMessageFilter(UINT message, DWORD dwFlag)
+{
+	typedef BOOL(WINAPI* pfnChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
+	pfnChangeWindowMessageFilter changeWindowMessageFilter = (pfnChangeWindowMessageFilter)GetProcAddress(GetModuleHandle(L"user32.dll"), "ChangeWindowMessageFilter");
+	if (changeWindowMessageFilter)
+		return changeWindowMessageFilter(message, dwFlag);
+	return FALSE;
 }
 UINT pGetDpiForWindow(HWND hWnd)
 {
