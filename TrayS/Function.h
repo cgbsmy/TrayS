@@ -6,6 +6,10 @@
 #include <Shlobj.h>
 #include <tlhelp32.h>
 #include <commctrl.h>
+
+//#include "Winhttp.h"
+//#pragma comment(lib,"winhttp.lib")
+
 //GDI+
 #include<gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
@@ -107,3 +111,46 @@ int			DrawShadowText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT 
 DWORD		GetSystemUsesLightTheme();//获取系统主题颜色模式
 BOOL		pChangeWindowMessageFilter(UINT message, DWORD dwFlag);
 UINT		pGetDpiForWindow(HWND hWnd);
+UINT_PTR	pSHAppBarMessage(DWORD dwMessage,PAPPBARDATA pData);
+
+BOOL GetOKXPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen);
+BOOL GetSinaPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen);
+
+char* xstrstr(const char* str, const char* sub);
+float xatof(const char* s);
+float xwtof(const WCHAR * s);
+
+typedef LPVOID HINTERNET;
+typedef HINTERNET* LPHINTERNET;
+typedef WORD INTERNET_PORT;
+typedef INTERNET_PORT* LPINTERNET_PORT;
+// WinHttpOpen dwAccessType values (also for WINHTTP_PROXY_INFO::dwAccessType)
+#define WINHTTP_ACCESS_TYPE_DEFAULT_PROXY               0
+#define WINHTTP_ACCESS_TYPE_NO_PROXY                    1
+#define WINHTTP_ACCESS_TYPE_NAMED_PROXY                 3
+#define WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY             4
+#define INTERNET_DEFAULT_PORT           0           // use the protocol-specific default
+#define INTERNET_DEFAULT_HTTP_PORT      80          //    "     "  HTTP   "
+#define INTERNET_DEFAULT_HTTPS_PORT     443         //    "     "  HTTPS  "
+// WinHttpOpenRequest prettifers for optional parameters
+#define WINHTTP_NO_REFERER             NULL
+#define WINHTTP_DEFAULT_ACCEPT_TYPES   NULL
+// flags for WinHttpOpenRequest():
+#define WINHTTP_FLAG_SECURE                0x00800000  // use SSL if applicable (HTTPS)
+#define WINHTTP_FLAG_ESCAPE_PERCENT        0x00000004  // if escaping enabled, escape percent as well
+#define WINHTTP_FLAG_NULL_CODEPAGE         0x00000008  // assume all symbols are ASCII, use fast convertion
+#define WINHTTP_FLAG_BYPASS_PROXY_CACHE    0x00000100 // add "pragma: no-cache" request header
+#define WINHTTP_FLAG_REFRESH               WINHTTP_FLAG_BYPASS_PROXY_CACHE
+#define WINHTTP_FLAG_ESCAPE_DISABLE        0x00000040  // disable escaping
+#define WINHTTP_FLAG_ESCAPE_DISABLE_QUERY  0x00000080  // if escaping enabled escape path part, but do not escape query
+// WinHttpSendRequest prettifiers for optional parameters.
+#define WINHTTP_NO_ADDITIONAL_HEADERS   NULL
+#define WINHTTP_NO_REQUEST_DATA         NULL
+typedef HINTERNET (WINAPI * pfnWinHttpOpen)(LPCWSTR pszAgentW,DWORD dwAccessType,LPCWSTR pszProxyW,LPCWSTR pszProxyBypassW,DWORD dwFlags);
+typedef HINTERNET (WINAPI * pfnWinHttpConnect)(HINTERNET hSession,LPCWSTR pswzServerName,INTERNET_PORT nServerPort,DWORD dwReserved);
+typedef HINTERNET (WINAPI * pfnWinHttpOpenRequest)(HINTERNET hConnect,LPCWSTR pwszVerb,LPCWSTR pwszObjectName,LPCWSTR pwszVersion,LPCWSTR pwszReferrer OPTIONAL,LPCWSTR FAR* ppwszAcceptTypes OPTIONAL,DWORD dwFlags);
+typedef BOOL (WINAPI * pfnWinHttpSendRequest)(HINTERNET hRequest,LPCWSTR lpszHeaders,DWORD dwHeadersLength,LPVOID lpOptional,DWORD dwOptionalLength,DWORD dwTotalLength,DWORD_PTR dwContext);
+typedef BOOL (WINAPI * pfnWinHttpReceiveResponse)(HINTERNET hRequest,LPVOID lpReserved);
+typedef BOOL (WINAPI * pfnWinHttpQueryDataAvailable)(HINTERNET hRequest,LPDWORD lpdwNumberOfBytesAvailable);
+typedef BOOL (WINAPI* pfnWinHttpReadData)(HINTERNET hRequest,LPVOID lpBuffer,DWORD dwNumberOfBytesToRead,LPDWORD lpdwNumberOfBytesRead);
+typedef BOOL (WINAPI* pfnWinHttpCloseHandle)(HINTERNET hInternet);

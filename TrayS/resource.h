@@ -20,6 +20,7 @@
 #define IDD_TIME                        133
 #define IDR_MENU                        134
 #define IDI_CLOSE1                      141
+#define IDD_PRICE                       142
 #define IDC_RADIO_DEFAULT               1001
 #define IDC_RADIO_TRANSPARENT           1002
 #define IDC_RADIO_BLURBEHIND            1003
@@ -72,26 +73,42 @@
 #define IDC_EDIT12                      1049
 #define IDC_CHECK_SOUND                 1050
 #define IDC_CHECK_MONITOR_SIMPLE        1051
+#define IDC_CHECK1                      1051
 #define IDC_RESTORE_DEFAULT             1052
+#define IDC_CHECK2                      1052
 #define IDC_EDIT13                      1053
 #define IDC_EDIT_TIME                   1053
+#define IDC_CHECK3                      1053
 #define IDC_CHECK_TIPS                  1054
+#define IDC_CHECK4                      1054
 #define IDC_BUTTON_FONT                 1055
+#define IDC_CHECK5                      1055
 #define IDC_BUTTON_TIPS_FONT            1056
+#define IDC_CHECK6                      1056
 #define IDC_EDIT14                      1057
+#define IDC_CHECK7                      1057
 #define IDC_EDIT15                      1058
+#define IDC_CHECK8                      1058
 #define IDC_EDIT16                      1059
+#define IDC_CHECK9                      1059
 #define IDC_EDIT17                      1060
+#define IDC_CHECK10                     1060
 #define IDC_CHECK_TASKICON              1061
 #define IDC_CHECK_FUSE                  1061
+#define IDC_CHECK11                     1061
 #define IDC_CHECK_TASKICON_BIG          1062
 #define IDC_CHECK_MONITOR_UPDOWN        1062
+#define IDC_CHECK12                     1062
 #define IDC_EDIT18                      1063
 #define IDC_EDIT19                      1064
 #define IDC_CHECK_MONITOR_FLOAT_VROW    1065
+#define IDC_RADIO1                      1065
 #define IDC_CHECK_MONITOR_TIME          1066
+#define IDC_RADIO2                      1066
 #define IDC_CHECK_TIME                  1067
+#define IDC_RADIO3                      1067
 #define IDC_CHECK_MONITOR_NEAR          1068
+#define IDC_RADIO4                      1068
 #define IDC_CHECK_TOPMOST               1069
 #define IDC_CHECK_DISK                  1070
 #define IDC_EDIT24                      1071
@@ -104,6 +121,7 @@
 #define IDC_EDIT23                      1078
 #define IDC_EDIT28                      1079
 #define IDC_EDIT29                      1080
+#define IDC_CHECK_PRICE                 1081
 #define ID_32800                        32800
 #define IDC_SELECT_ALL                  33000
 #define IDC_DISK_ALL                    33200
@@ -114,9 +132,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        142
+#define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32802
-#define _APS_NEXT_CONTROL_VALUE         1051
+#define _APS_NEXT_CONTROL_VALUE         1066
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

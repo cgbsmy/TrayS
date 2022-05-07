@@ -278,6 +278,8 @@ BOOL LaunchAppIntoDifferentSession(WCHAR* szExe, WCHAR* szDir, WCHAR* szLine)//Ò
 			&si,               // pointer to STARTUPINFO structure
 			&pi                // receives information about new process
 		);
+//		CloseHandle(pi.hProcess);
+//		CloseHandle(pi.hThread);
 	}
 	if (hProcess)
 	{
@@ -786,7 +788,9 @@ BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine)///////////////////////
 		sz = szName;
 	}
 	WCHAR szLine[MAX_PATH];
-	lstrcpy(szLine, szCommandLine);
+	szLine[0] = L'\0';
+	if(szCommandLine)
+		lstrcpy(szLine, szCommandLine);
 	ret = CreateProcess(sz,// RUN_TEST.batÎ»ÓÚ¹¤³ÌËùÔÚÄ¿Â¼ÏÂ
 		szLine,
 		NULL,
@@ -1457,6 +1461,20 @@ DWORD GetSystemUsesLightTheme()
 	}
 	return dm;
 }
+UINT_PTR	pSHAppBarMessage(DWORD dwMessage, PAPPBARDATA pData)
+{
+	UINT_PTR ret=FALSE;
+	typedef UINT_PTR(WINAPI* pfnSHAppBarMessage)(DWORD dwMessage, PAPPBARDATA pData);
+	HMODULE hDll = LoadLibrary(L"shell32.dll");
+	if (hDll)
+	{
+		pfnSHAppBarMessage sHAppBarMessage = (pfnSHAppBarMessage)GetProcAddress(hDll, "SHAppBarMessage");
+		if (sHAppBarMessage)
+			ret = sHAppBarMessage(dwMessage, pData);
+		FreeLibrary(hDll);
+	}
+	return ret;
+}
 BOOL pChangeWindowMessageFilter(UINT message, DWORD dwFlag)
 {
 	typedef BOOL(WINAPI* pfnChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
@@ -1481,4 +1499,317 @@ UINT pGetDpiForWindow(HWND hWnd)
 		return dpi;
 	}
 */
+}
+HMODULE hWinHttp = NULL;
+pfnWinHttpOpen winHttpOpen;
+pfnWinHttpConnect winHttpConnect;
+pfnWinHttpOpenRequest winHttpOpenRequest;
+pfnWinHttpSendRequest winHttpSendRequest;
+pfnWinHttpReceiveResponse winHttpReceiveResponse;
+pfnWinHttpQueryDataAvailable winHttpQueryDataAvailable;
+pfnWinHttpReadData winHttpReadData;
+pfnWinHttpCloseHandle winHttpCloseHandle;
+BOOL LoadWinHttp()
+{
+	hWinHttp = LoadLibrary(L"WinHttp.dll");
+	if (hWinHttp)
+	{
+		winHttpOpen = (pfnWinHttpOpen)GetProcAddress(hWinHttp, "WinHttpOpen");
+		winHttpConnect = (pfnWinHttpConnect)GetProcAddress(hWinHttp, "WinHttpConnect");
+		winHttpOpenRequest = (pfnWinHttpOpenRequest)GetProcAddress(hWinHttp, "WinHttpOpenRequest");
+		winHttpSendRequest = (pfnWinHttpSendRequest)GetProcAddress(hWinHttp, "WinHttpSendRequest");
+		winHttpReceiveResponse = (pfnWinHttpReceiveResponse)GetProcAddress(hWinHttp, "WinHttpReceiveResponse");
+		winHttpQueryDataAvailable = (pfnWinHttpQueryDataAvailable)GetProcAddress(hWinHttp, "WinHttpQueryDataAvailable");
+		winHttpReadData = (pfnWinHttpReadData)GetProcAddress(hWinHttp, "WinHttpReadData");
+		winHttpCloseHandle = (pfnWinHttpCloseHandle)GetProcAddress(hWinHttp, "WinHttpCloseHandle");
+		return TRUE;
+	}
+	return FALSE;
+}
+BOOL GetOKXFloat(char* szBuffer, float* fOut, WCHAR* szOut, char* sz)
+{
+	char* x = xstrstr(szBuffer, sz);
+	if (x)
+	{
+		char* l = xstrstr(x, ":");
+		if (l)
+		{
+			l += 2;
+			char* r = xstrstr(l, "\"");
+			if (r)
+			{
+				r[0] = '\0';
+				if (szOut)
+					MultiByteToWideChar(CP_UTF8, 0, l, -1, szOut, 16);
+				*fOut = xatof(l);
+				r[0] = '\"';
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
+}
+BOOL GetOKXPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen)
+{
+	if (hWinHttp == NULL)
+	{
+		if (!LoadWinHttp())
+			return FALSE;
+	}
+	DWORD dwSize = 0;
+	DWORD dwDownloaded = 0;
+	char pszOutBuffer[512];
+	BOOL  bResults = FALSE;
+	HINTERNET  hSession = NULL,hConnect = NULL,hRequest = NULL;
+
+	// Use WinHttpOpen to obtain a session handle.
+	hSession = winHttpOpen(L"Price", WINHTTP_ACCESS_TYPE_NO_PROXY, NULL, NULL, NULL);
+
+	//hSession = WinHttpOpen( L"WinHTTP Example/1.0",  
+	//                        WINHTTP_ACCESS_TYPE_NO_PROXY,
+	//                        WINHTTP_NO_PROXY_NAME, 
+	//                        WINHTTP_NO_PROXY_BYPASS, 0 );
+
+	// Specify an HTTP server.
+	if (hSession)
+		hConnect = winHttpConnect(hSession, L"www.ouyicn.mobi",
+			INTERNET_DEFAULT_HTTP_PORT, 0);
+	WCHAR szGet[256] = L"/api/v5/market/ticker?instId=";
+	lstrcat(szGet, szName);
+	// Create an HTTP request handle.
+	if (hConnect)
+		hRequest = winHttpOpenRequest(hConnect, L"GET", szGet,NULL, L"http://vip.stock.finance.sina.com.cn/",WINHTTP_DEFAULT_ACCEPT_TYPES,WINHTTP_FLAG_REFRESH);
+
+	// Send a request.
+	if (hRequest)
+		bResults = winHttpSendRequest(hRequest,WINHTTP_NO_ADDITIONAL_HEADERS, 0,WINHTTP_NO_REQUEST_DATA, 0,0, 0);
+
+
+	// End the request.
+	if (bResults)
+		bResults = winHttpReceiveResponse(hRequest, NULL);
+	
+	// Keep checking for data until there is nothing left.
+	size_t i = 0;
+	ZeroMemory(pszOutBuffer, 512);
+	if (bResults)
+	{
+		do
+		{
+			dwSize = 0;
+			winHttpQueryDataAvailable(hRequest, &dwSize);
+			if (!dwSize)
+				break;
+			if (i+dwSize > 511)
+				dwSize = 511-i;
+			if (winHttpReadData(hRequest, (LPVOID)&pszOutBuffer[i], dwSize, &dwDownloaded))
+			{
+				i = strlen(pszOutBuffer);
+			}
+			if (!dwDownloaded)
+				break;
+		} while (dwSize != 0);
+		char szLast[] = "last";
+		char szsodUtc8[] = "sodUtc8";
+		bResults = GetOKXFloat(pszOutBuffer, fOutLast, szOutLast, szLast);
+		bResults = GetOKXFloat(pszOutBuffer, fOutOpen, szOutOpen, szsodUtc8);
+	}
+	// Close any open handles.
+	if (hRequest) winHttpCloseHandle(hRequest);
+	if (hConnect) winHttpCloseHandle(hConnect);
+	if (hSession) winHttpCloseHandle(hSession);
+	return bResults;
+}
+BOOL GetSinaFloat(char* szBuffer, float* fOut, WCHAR* szOut, int n)
+{
+	char* l=szBuffer;
+	for (int i=0;i<n;i++)
+	{
+		l = xstrstr(l+1, ",");
+		if (!l)
+			break;
+	}
+	if (l)
+	{
+		l += 1;
+		char* r = xstrstr(l, ",");
+		if (r)
+		{
+			r[0] = '\0';
+			if(szOut)
+				MultiByteToWideChar(CP_UTF8, 0, l, -1, szOut, 16);
+			*fOut = xatof(l);
+			r[0] = ',';
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+BOOL GetSinaPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen)
+{
+	if (hWinHttp == NULL)
+	{
+		if (!LoadWinHttp())
+			return FALSE;
+	}
+	DWORD dwSize = 0;
+	DWORD dwDownloaded = 0;
+	char pszOutBuffer[512];
+	BOOL  bResults = FALSE;
+	HINTERNET  hSession = NULL, hConnect = NULL, hRequest = NULL;
+
+	// Use WinHttpOpen to obtain a session handle.
+	hSession = winHttpOpen(L"Price", WINHTTP_ACCESS_TYPE_NO_PROXY, NULL, NULL, NULL);
+
+	//hSession = WinHttpOpen( L"WinHTTP Example/1.0",  
+	//                        WINHTTP_ACCESS_TYPE_NO_PROXY,
+	//                        WINHTTP_NO_PROXY_NAME, 
+	//                        WINHTTP_NO_PROXY_BYPASS, 0 );
+
+	// Specify an HTTP server.
+	if (hSession)
+		hConnect = winHttpConnect(hSession, L"hq.sinajs.cn",
+			INTERNET_DEFAULT_HTTP_PORT, 0);
+	WCHAR szGet[256] = L"/list=";
+	lstrcat(szGet, szName);
+	// Create an HTTP request handle.
+	if (hConnect)
+		hRequest = winHttpOpenRequest(hConnect, L"GET", szGet, NULL, L"http://vip.stock.finance.sina.com.cn/", WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_REFRESH);
+
+	// Send a request.
+	if (hRequest)
+		bResults = winHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0);
+
+
+	// End the request.
+	if (bResults)
+		bResults = winHttpReceiveResponse(hRequest, NULL);
+
+	// Keep checking for data until there is nothing left.
+	size_t i = 0;
+	ZeroMemory(pszOutBuffer, 512);
+	if (bResults)
+	{
+		do
+		{
+			dwSize = 0;
+			winHttpQueryDataAvailable(hRequest, &dwSize);
+			if (!dwSize)
+				break;
+			if (i+dwSize > 511)
+				dwSize = 511-i;
+			if (winHttpReadData(hRequest, (LPVOID)&pszOutBuffer[i], dwSize, &dwDownloaded))
+			{
+				i = strlen(pszOutBuffer);
+			}
+			if (!dwDownloaded)
+				break;
+		} while (dwSize != 0);
+		if (szName[0] == L'h')//¸Û¹É
+		{
+			bResults = GetSinaFloat(pszOutBuffer, fOutOpen, szOutOpen, 3);
+			bResults = GetSinaFloat(pszOutBuffer, fOutLast, szOutLast, 6);
+		}
+		else if (szName[0] == L'g')//ÃÀ¹É
+		{
+			bResults = GetSinaFloat(pszOutBuffer, fOutOpen, szOutOpen, 26);
+			bResults = GetSinaFloat(pszOutBuffer, fOutLast, szOutLast, 1);
+		}
+		else if (szName[0] == L'C')//¹ÉÖ¸ÆÚ»õ
+		{
+			bResults = GetSinaFloat(pszOutBuffer, fOutOpen, szOutOpen, 14);
+			bResults = GetSinaFloat(pszOutBuffer, fOutLast, szOutLast, 3);
+		}
+		else if (szName[0] >= L'A' && szName[0] <= L'Z')
+		{
+			bResults = GetSinaFloat(pszOutBuffer, fOutOpen, szOutOpen, 10);
+			bResults = GetSinaFloat(pszOutBuffer, fOutLast, szOutLast, 8);
+		}
+		else
+		{
+			bResults = GetSinaFloat(pszOutBuffer, fOutOpen, szOutOpen, 2);
+			bResults = GetSinaFloat(pszOutBuffer, fOutLast, szOutLast, 3);
+		}
+	}
+	// Close any open handles.
+	if (hRequest) winHttpCloseHandle(hRequest);
+	if (hConnect) winHttpCloseHandle(hConnect);
+	if (hSession) winHttpCloseHandle(hSession);
+	return bResults;
+}
+
+
+char* xstrstr(const char* str, const char* sub)
+{
+	int i = 0;
+	int j = 0;
+	while (str[i] && sub[j])
+	{
+		if (str[i] == sub[j])//Èç¹ûÏàµÈ
+		{
+			++i;
+			++j;
+		}
+		else		     //Èç¹û²»µÈ
+		{
+			i = i - j + 1;
+			j = 0;
+		}
+	}
+	if (!sub[j])
+	{
+		return (char*)&str[i - strlen(sub)];
+	}
+	else
+	{
+		return (char*) 0;
+	}
+}
+float xatof(const char* s)
+{
+	float v = 0;
+	float w = 1;
+	int n = 1;
+	const char* c = s + strlen(s);
+
+	if (*s == '-') {
+		n = -1;
+		++s;
+	}
+
+	while (--c >= s) {
+		if (*c == '.') {
+			v /= w;
+			w = 1;
+		}
+		else {
+			v += (*c - '0') * w;
+			w *= 10;
+		}
+	}
+	return n * v;
+}
+float xwtof(const WCHAR* s)
+{
+	float v = 0;
+	float w = 1;
+	int n = 1;
+	const WCHAR* c = s + lstrlen(s);
+
+	if (*s == '-') {
+		n = -1;
+		++s;
+	}
+
+	while (--c >= s) {
+		if (*c == '.') {
+			v /= w;
+			w = 1;
+		}
+		else {
+			v += (*c - '0') * w;
+			w *= 10;
+		}
+	}
+	return n * v;
 }

@@ -7,11 +7,13 @@
 #include <Iphlpapi.h>
 #include <Tlhelp32.h>
 #include <dwmapi.h>
+//#include <process.h>
 //WINRING0
 #include "OlsDef.h"
 #include "OlsApiInit.h"
 //ATIGPU
 #include "adl_sdk.h"
+
 
 #define MSG_APPBAR_MSGID WM_USER+15
 #define MAX_LOADSTRING 100
@@ -104,6 +106,7 @@ HWND hSetting;//设置窗口句柄
 HWND hTaskBar;//工具窗口句柄
 HWND hTaskTips;//提示窗口句柄
 HWND hTime;//秒窗口
+HWND hPrice;//行情窗口
 //HWND hForeground;
 HWND hTray=NULL;//系统主任务栏窗口句柄
 HWND hTaskWnd;//系统主任务列表窗口句柄
@@ -120,6 +123,7 @@ const WCHAR szAppName[] = L"TrayS";//程序名
 const WCHAR szNetCpl[] = L" cncpa.cpl";//打开网络设置
 const WCHAR szTaskmgr[] = L" oTaskmgr";//打开任务管理器
 const WCHAR szPerfmon[] = L" operfmon.exe /res";//打开资源监测器
+const WCHAR szOpenPerfDisk[] = L" olodctr /E:PerfDisk";//修复磁盘计数器
 const WCHAR szCompmgmt[] = L" ocompmgmt.msc";//计算机管理
 const WCHAR szPowerCpl[] = L" cpowercfg.cpl";//打开电源设置
 const WCHAR szTimeDateCpl[] = L" ctimedate.cpl";//打开时间日期
@@ -133,6 +137,7 @@ DWORD m_last_in_bytes = 0;//总上一秒下载速度
 DWORD m_last_out_bytes = 0;//总上一秒上传速度
 DWORD s_in_byte = 0;//总下载速度
 DWORD s_out_byte = 0;//总上传速度
+
 /*
 int rNum=60;
 DWORD s_in_bytes[60];//一分钟内的下载数据
@@ -141,15 +146,24 @@ int iBytes = 0;//当前数据指针
 */
 int mWidth;//工具窗口宽度
 int mHeight;//工具窗口竖排高度
+int wSpace;//模块间隔
 int iDPI = 96;//当前DPI
 BOOL VTray = FALSE;//竖的任务栏
 BOOL bResetRun = FALSE;
-
+BOOL bRealClose = FALSE;
 BOOL bSetting = FALSE;
-
+int iError=0;
+//unsigned int __stdcall MainThread(PVOID pM);
+DWORD WINAPI MainThreadProc(PVOID pParam);
+DWORD WINAPI GetDataThreadProc(PVOID pParam);
 BOOL bShadow = FALSE;//显示阴影文字
 COLORREF bColor = 0x181818;//阴影颜色
 DWORD bThemeMode = 0;//颜色模式
+HANDLE hThread = NULL;
+float fLastPrice1=0, fLastPrice2=0,fOpenPrice1=0, fOpenPrice2=0;
+WCHAR szLastPrice1[16]={0};
+WCHAR szLastPrice2[16]={0};
+
 RTL_OSVERSIONINFOW rovi;//版本号
 
 BOOL bFullScreen = FALSE;
@@ -206,6 +220,14 @@ typedef struct _TRAYSAVE//默认参数
 	WCHAR szDiskWriteSec[8];//硬盘写入显示的文字
 	WCHAR szDiskName[8];//硬盘名称
 	WCHAR szDisk;//盘符
+	BOOL bMonitorPrice;//显示行情
+	float HighRemind[6];//超过价格提醒
+	float LowRemind[6];//低过价格提醒
+	BOOL bCheckHighRemind[6];
+	BOOL bCheckLowRemind[6];
+	WCHAR szPriceName1[64];
+	WCHAR szPriceName2[64];
+	int iPriceInterface[2];
 }TRAYSAVE;
 TRAYSAVE TraySave = {
 	116,
@@ -256,13 +278,22 @@ TRAYSAVE TraySave = {
 	L"读取:",
 	L"写入:",
 	L"硬盘:",
-	0
+	0,
+	FALSE,
+	{0},
+	{0},
+	{0},
+	{0},
+	L"BTC-USDT-SWAP",
+	L"ETH-USDT-SWAP",
+	{0,0}
 	};
 int wTraffic;//流量宽度
 int wTemperature;//温度宽度
 int wUsage;//利用率宽度
 int wDisk;//硬盘流量宽度
 int wTime;//时间宽度
+int wPrice;//行情宽度
 int wHeight;//监控字符高度
 POINT pTime;//秒位置
 HFONT hFont;//监控窗口字体
@@ -471,6 +502,7 @@ INT_PTR CALLBACK    SettingProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    TaskBarProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    TaskTipsProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    TimeProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    PriceProc(HWND, UINT, WPARAM, LPARAM);
 void SetTaskBarPos(HWND, HWND, HWND, HWND, BOOL);
 int DrawShadowText(HDC hDC, LPCTSTR lpString, int nCount, LPRECT lpRect, UINT uFormat);
 void FreeTemperatureDLL();
