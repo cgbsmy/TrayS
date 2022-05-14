@@ -769,7 +769,7 @@ void SetToCurrentPath()////////////////////////////////////ÉèÖÃµ±Ç°³ÌÐòÎªµ±Ç°Ä¿Â
 		}
 	}
 }
-BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine)/////////////////////////////////ÔËÐÐ³ÌÐò
+BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine,HANDLE *pProcess)/////////////////////////////////ÔËÐÐ³ÌÐò
 {
 	BOOL ret = FALSE;
 	STARTUPINFO StartInfo;
@@ -800,7 +800,10 @@ BOOL RunProcess(LPTSTR szExe, const WCHAR* szCommandLine)///////////////////////
 		NULL,
 		NULL,
 		&StartInfo, &procStruct);
-	CloseHandle(procStruct.hProcess);
+	if (pProcess == NULL)
+		CloseHandle(procStruct.hProcess);
+	else
+		*pProcess = procStruct.hProcess;
 	CloseHandle(procStruct.hThread);
 //	SetTimer(hMain, 11, 1000, NULL);
 	return ret;
@@ -815,7 +818,7 @@ void SetTaskScheduler(BOOL bDelAdd, const WCHAR* szName)////////////////////////
 	if (bDelAdd)
 	{
 		const WCHAR szXML1[] = L"<\?xml version=\"1.0\" encoding=\"unicode\"\?><Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><RegistrationInfo><URI>\\%s</URI></RegistrationInfo><Triggers><LogonTrigger><Enabled>true</Enabled>%s</LogonTrigger></Triggers><Principals><Principal>%s</Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><AllowHardTerminate>false</AllowHardTerminate><StartWhenAvailable>true</StartWhenAvailable><RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable><IdleSettings><Duration>PT10M</Duration><WaitTimeout>PT1H</WaitTimeout><StopOnIdleEnd>true</StopOnIdleEnd><RestartOnIdle>false</RestartOnIdle></IdleSettings><AllowStartOnDemand>true</AllowStartOnDemand><Enabled>true</Enabled><Hidden>false</Hidden>";
-		const WCHAR szXML2[] = L"<RunOnlyIfIdle>false</RunOnlyIfIdle><WakeToRun>true</WakeToRun><ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>7</Priority></Settings><Actions Context=\"Author\"><Exec><Command>%s</Command><Arguments>t</Arguments></Exec></Actions></Task>";
+		const WCHAR szXML2[] = L"<RunOnlyIfIdle>false</RunOnlyIfIdle><WakeToRun>false</WakeToRun><ExecutionTimeLimit>PT0S</ExecutionTimeLimit><Priority>7</Priority></Settings><Actions Context=\"Author\"><Exec><Command>%s</Command><Arguments>t</Arguments></Exec></Actions></Task>";
 		WCHAR sXML[4096];
 		WCHAR szExe[MAX_PATH];
 		GetModuleFileName(NULL, szExe, MAX_PATH);
@@ -977,7 +980,7 @@ BOOL AutoRun(BOOL GetSet, BOOL bAutoRun,const WCHAR* szName)//¶ÁÈ¡¡¢ÉèÖÃ¿ª»úÆô¶¯
 	}
 	return ret;
 }
-BOOL SetWindowCompositionAttribute(HWND hWnd, ACCENT_STATE mode, DWORD AlphaColor)//ÉèÖÃ´°¿ÚWIN10·ç¸ñ
+BOOL SetWindowCompositionAttribute(HWND hWnd, ACCENT_STATE mode, DWORD AlphaColor,BOOL bWin11)//ÉèÖÃ´°¿ÚWIN10·ç¸ñ
 {
 	pfnSetWindowCompositionAttribute pSetWindowCompositionAttribute = NULL;
 	if (mode == ACCENT_DISABLED)
@@ -996,7 +999,11 @@ BOOL SetWindowCompositionAttribute(HWND hWnd, ACCENT_STATE mode, DWORD AlphaColo
 		pSetWindowCompositionAttribute = (pfnSetWindowCompositionAttribute)GetProcAddress(hUser, "SetWindowCompositionAttribute");
 	if (pSetWindowCompositionAttribute)
 	{
-		ACCENT_POLICY accent = { mode, 2, AlphaColor, 0 };
+		ACCENT_POLICY accent;
+		if (bWin11 && mode == ACCENT_ENABLE_ACRYLICBLURBEHIND)
+			accent = { mode, 0, AlphaColor, 0 };
+		else
+			accent = { mode, 2, AlphaColor, 0 };
 		_WINDOWCOMPOSITIONATTRIBDATA data;
 		data.Attrib = WCA_ACCENT_POLICY;
 		data.pvData = &accent;
@@ -1092,6 +1099,8 @@ typedef struct PACKAGE_ID {
 } PACKAGE_ID;
 #define SUCCEEDED(hr) (((HRESULT)(hr)) >= 0)
 #define ARRAY_SIZEOF(array) (sizeof(array)/sizeof(array[0]))
+
+/*
 HICON GetUWPAppIcon(HWND hWnd, UINT uiIconSize = 32)////////////////////////////////////»ñÈ¡UWP³ÌÐòÍ¼±ê
 {
 	HICON hIcon = NULL;
@@ -1190,20 +1199,21 @@ HICON GetUWPAppIcon(HWND hWnd, UINT uiIconSize = 32)////////////////////////////
 	}
 	return hIcon;
 }
+
 HICON GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd,int IconSize)
 {
 	HICON hIcon = NULL;
 	*bUWP = FALSE;
 	if (hUICoreWnd)
 		*hUICoreWnd = FALSE;
-	if (hWnd == NULL /*|| IsHungAppWindow(hWnd)*/)return NULL;
+	if (hWnd == NULL / *|| IsHungAppWindow(hWnd)* /)return NULL;
 	WCHAR szClassName[MAX_PATH];
 	GetClassName(hWnd, szClassName, MAX_PATH);
 	if (lstrcmp(szClassName, L"Windows.UI.Core.CoreWindow") == 0)
 	{
 		hIcon = GetUWPAppIcon(hWnd, IconSize);
 	}
-	if (hIcon == NULL && GetWindowLongPtr(hWnd, GWL_EXSTYLE) & (0x00200000L/*WS_EX_NOREDIRECTIONBITMAP*/))
+	if (hIcon == NULL && GetWindowLongPtr(hWnd, GWL_EXSTYLE) & (0x00200000L/* WS_EX_NOREDIRECTIONBITMAP* /))
 	{
 		HWND hUWP = FindWindowEx(hWnd, NULL, L"Windows.UI.Core.CoreWindow", NULL);
 		if (hUWP)
@@ -1222,7 +1232,7 @@ HICON GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd,int IconSize)
 			do {
 				if (!IsHungAppWindow(hCurrent) &&
 					GetWindowLongPtr(hCurrent, GWLP_HWNDPARENT) == NULL &&
-					GetWindowLongPtr(hCurrent, GWL_EXSTYLE) & (0x00200000L/*WS_EX_NOREDIRECTIONBITMAP*/) &&
+					GetWindowLongPtr(hCurrent, GWL_EXSTYLE) & (0x00200000L/ *WS_EX_NOREDIRECTIONBITMAP* /) &&
 					IsWindowEnabled(hCurrent)) {
 					GetClassName(hCurrent, szClassName, ARRAY_SIZEOF(szClassName));
 					if (lstrcmp(szClassName, L"Windows.UI.Core.CoreWindow") == 0) {
@@ -1273,7 +1283,7 @@ HICON GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd,int IconSize)
 	}
 	else
 		*bUWP = TRUE;
-	/*
+	/ *
 		Gdiplus::Bitmap gIcon(hIcon);
 		Gdiplus::Bitmap bBitmap(IconSize, IconSize);
 		Gdiplus::Graphics gGraphics(&bBitmap);
@@ -1281,9 +1291,10 @@ HICON GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd,int IconSize)
 		gGraphics.DrawImage(&gIcon, 0, 0, IconSize, IconSize);
 		DestroyIcon(hIcon);
 		bBitmap.GetHICON(&hIcon);
-	*/
+	* /
 	return hIcon;
 }
+*/
 BOOL SetForeground(HWND hWnd)//¼¤»î´°¿ÚÎªÇ°Ì¨
 {
 	bool bResult = false;
@@ -1335,38 +1346,6 @@ void lstrlwr(WCHAR* wString, size_t SizeInWords)
 	}
 }
 
-wchar_t* lstrstr(const wchar_t* str, const wchar_t* sub)
-{
-	if (str == NULL || sub == NULL)
-		return NULL;
-	int iStrLen = lstrlen(str);
-	int iSubLen = lstrlen(sub);
-	if (iStrLen < iSubLen)
-		return NULL;
-	if (iStrLen != 0 && iSubLen == 0)
-		return NULL;
-	if (iStrLen == 0 && iSubLen == 0)
-	{
-		return (wchar_t*)str;
-	}
-	for (int i = 0; i < iStrLen; ++i)
-	{
-		int m = 0, n = i;
-		if (lstrlen(str + i) < iSubLen)
-		{
-			return NULL;
-		}
-		if (str[n] == sub[m])
-		{
-			while (str[n++] == sub[m++])
-			{
-				if (sub[m] == L'\0')
-					return (wchar_t*)str + i;
-			}
-		}
-	}
-	return NULL;
-}
 BOOL OpenProcessPath(DWORD dwProcessId)//Í¨¹ý½ø³ÌID´ò¿ª½ø³ÌµÄÂ·¾¶
 {
 	BOOL ret = FALSE;
@@ -1549,7 +1528,7 @@ BOOL GetOKXFloat(char* szBuffer, float* fOut, WCHAR* szOut, char* sz)
 	}
 	return FALSE;
 }
-BOOL GetOKXPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen)
+BOOL GetOKXPrice(LPTSTR szName, LPTSTR szWeb, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen)
 {
 	if (hWinHttp == NULL)
 	{
@@ -1572,7 +1551,7 @@ BOOL GetOKXPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLa
 
 	// Specify an HTTP server.
 	if (hSession)
-		hConnect = winHttpConnect(hSession, L"www.ouyicn.mobi",
+		hConnect = winHttpConnect(hSession, szWeb,
 			INTERNET_DEFAULT_HTTP_PORT, 0);
 	WCHAR szGet[256] = L"/api/v5/market/ticker?instId=";
 	lstrcat(szGet, szName);
@@ -1738,6 +1717,32 @@ BOOL GetSinaPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutL
 	return bResults;
 }
 
+wchar_t* lstrstr(const wchar_t* str, const wchar_t* sub)
+{
+	int i = 0;
+	int j = 0;
+	while (str[i] && sub[j])
+	{
+		if (str[i] == sub[j])//Èç¹ûÏàµÈ
+		{
+			++i;
+			++j;
+		}
+		else		     //Èç¹û²»µÈ
+		{
+			i = i - j + 1;
+			j = 0;
+		}
+	}
+	if (!sub[j])
+	{
+		return (wchar_t*)&str[i - lstrlen(sub)];
+	}
+	else
+	{
+		return (wchar_t*)0;
+	}
+}
 
 char* xstrstr(const char* str, const char* sub)
 {
@@ -1796,20 +1801,73 @@ float xwtof(const WCHAR* s)
 	int n = 1;
 	const WCHAR* c = s + lstrlen(s);
 
-	if (*s == '-') {
+	if (*s == L'-') {
 		n = -1;
 		++s;
 	}
 
 	while (--c >= s) {
-		if (*c == '.') {
+		if (*c == L'.') {
 			v /= w;
 			w = 1;
 		}
 		else {
-			v += (*c - '0') * w;
+			v += (*c - L'0') * w;
 			w *= 10;
 		}
 	}
 	return n * v;
+}
+BOOL FloatToStr(float f, WCHAR* sz)
+{
+	if(f>1000000)
+		wsprintf(sz, L"%d",(int)f);
+	else if (f > 100000)
+	{
+		int x = (int)(f * 10);
+		wsprintf(sz, L"%d.%.1d", x / 10, x % 10);
+	}
+	else if (f > 10000)
+	{
+		int x = (int)(f * 100);
+		wsprintf(sz, L"%d.%.2d", x / 100, x % 100);
+	}
+	else if (f > 1000)
+	{
+		int x = (int)(f * 1000);
+		wsprintf(sz, L"%d.%.3d", x / 1000, x % 1000);
+	}
+	else if (f > 100)
+	{
+		int x = (int)(f * 10000);
+		wsprintf(sz, L"%d.%.4d", x / 10000, x % 10000);
+	}
+	else if (f > 10)
+	{
+		int x = (int)(f * 100000);
+		wsprintf(sz, L"%d.%.5d", x / 100000, x % 100000);
+	}
+	else if (f > 1)
+	{
+		int x = (int)(f * 1000000);
+		wsprintf(sz, L"%d.%.6d", x / 1000000, x % 1000000);
+	}
+	else
+	{
+		int x = (int)(f * 10000000);
+		wsprintf(sz, L"%d.%.7d", x / 10000000, x % 10000000);
+	}
+	return TRUE;
+}
+void EmptyProcessMemory(DWORD pID)
+{
+	HANDLE hProcess;
+	if(pID==NULL)
+		hProcess = GetCurrentProcess();
+	else
+	{
+		hProcess = OpenProcess(PROCESS_ALL_ACCESS, TRUE, pID);
+	}
+	SetProcessWorkingSetSize(hProcess, -1, -1);
+	EmptyWorkingSet(hProcess);
 }

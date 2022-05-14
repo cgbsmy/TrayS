@@ -11,9 +11,12 @@
 //#pragma comment(lib,"winhttp.lib")
 
 //GDI+
+/*
 #include<gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
 using namespace Gdiplus;
+*/
+
 const WCHAR lpServiceName[] = L"TrayS";//程序名
 const WCHAR szShellTray[] = L"Shell_TrayWnd";//主任务栏类名
 const WCHAR szSecondaryTray[] = L"Shell_SecondaryTrayWnd";//副任务栏类名
@@ -74,8 +77,9 @@ typedef struct _ACCENT_POLICY
 } ACCENT_POLICY;
 typedef BOOL(WINAPI* pfnSetWindowCompositionAttribute)(HWND, struct _WINDOWCOMPOSITIONATTRIBDATA*);
 void		SetToCurrentPath();//设置进程路径为当前路径
-BOOL		RunProcess(LPTSTR szExe, const WCHAR* szCommandLine);//运行程序
-BOOL		SetWindowCompositionAttribute(HWND hWnd, ACCENT_STATE mode, DWORD AlphaColor);//设置窗口WIN10风格
+void		EmptyProcessMemory(DWORD pID=NULL);
+BOOL		RunProcess(LPTSTR szExe, const WCHAR* szCommandLine,HANDLE *pProcess=NULL);//运行程序
+BOOL		SetWindowCompositionAttribute(HWND hWnd, ACCENT_STATE mode, DWORD AlphaColor,BOOL bWin11=FALSE);//设置窗口WIN10风格
 BOOL		AutoRun(BOOL GetSet, BOOL bAutoRun, const WCHAR* szName);//读取、设置开机启动、关闭开机启动
 HICON		GetIcon(HWND hWnd, BOOL* bUWP, HWND* hUICoreWnd, int IconSize);//获取窗口图标
 BOOL		GetProcessFileName(DWORD dwProcessId, LPTSTR pszFileName, DWORD dwFileNameLength);//通过进程ID获取目录文件名
@@ -83,6 +87,7 @@ BOOL		SetForeground(HWND hWnd);//强制设置窗口为前台
 void		lstrlwr(WCHAR* wString, size_t SizeInWords);//字符串转小写
 wchar_t*	lstrstr(const wchar_t* str, const wchar_t* sub);//字符串查找
 BOOL		OpenWindowPath(HWND hWnd);//打开窗口所在的进程路径
+BOOL		OpenProcessPath(DWORD dwProcessId);//通过进程ID打开进程的路径
 BOOL		EnableDebugPrivilege(BOOL bEnableDebugPrivilege);//DEBUG提权
 int			GetScreenRect(HWND hWnd, LPRECT lpRect, BOOL bTray);//获取窗口所在的屏幕大小可减去任务栏
 BOOL		GetSetVolume(BOOL bSet, HWND hWnd, DWORD dwProcessId, float* fVolume, BOOL* bMute, BOOL IsMixer);//获取与设置进程音量
@@ -113,12 +118,14 @@ BOOL		pChangeWindowMessageFilter(UINT message, DWORD dwFlag);
 UINT		pGetDpiForWindow(HWND hWnd);
 UINT_PTR	pSHAppBarMessage(DWORD dwMessage,PAPPBARDATA pData);
 
-BOOL GetOKXPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen);
+BOOL GetOKXPrice(LPTSTR szName, LPTSTR szWeb, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen);
 BOOL GetSinaPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutLast, WCHAR* szOutOpen);
 
 char* xstrstr(const char* str, const char* sub);
 float xatof(const char* s);
 float xwtof(const WCHAR * s);
+BOOL FloatToStr(float f, WCHAR* sz);
+
 
 typedef LPVOID HINTERNET;
 typedef HINTERNET* LPHINTERNET;
