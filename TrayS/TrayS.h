@@ -365,6 +365,8 @@ pfnGetAdaptersAddresses GetAdaptersAddressesT;
 pfnGetIfTable GetIfTableT;
 typedef DWORD(WINAPI* pfnGetIfTable2)(PMIB_IF_TABLE2* Table);
 pfnGetIfTable2 getIfTable2;
+typedef VOID (WINAPI* pfnFreeMibTable)(PVOID Memory);
+pfnFreeMibTable freeMibTable;
 HMODULE hOleacc=NULL;
 typedef ULONG(WINAPI* pfnAccessibleObjectFromWindow)(_In_ HWND hwnd, _In_ DWORD dwId, _In_ REFIID riid, _Outptr_ void** ppvObject);
 typedef ULONG(WINAPI* pfnAccessibleChildren)(_In_ IAccessible* paccContainer, _In_ LONG iChildStart, _In_ LONG cChildren, _Out_writes_(cChildren) VARIANT* rgvarChildren, _Out_ LONG* pcObtained);

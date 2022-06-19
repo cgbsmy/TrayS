@@ -529,9 +529,9 @@ void OpenTaskBar()
 //					SetParent(hTaskBar, GetForegroundWindow());
 			}
 			SetWH();
-			if (TraySave.bMonitorTransparent)
-				SetWindowLongPtr(hTaskBar, GWL_EXSTYLE, GetWindowLongPtr(hTaskBar, GWL_EXSTYLE) | WS_EX_TRANSPARENT);
 			ShowWindow(hTaskBar, SW_SHOW);
+			if (TraySave.bMonitorTransparent)
+				SetWindowLongPtr(hTaskBar, GWL_EXSTYLE, GetWindowLongPtr(hTaskBar, GWL_EXSTYLE) |WS_EX_LAYERED |WS_EX_TRANSPARENT);
 			SetTimer(hTaskBar, 3, 1000, NULL);
 			//			SetTimer(hTaskBar, 6, 100, NULL);
 		}
@@ -1270,8 +1270,10 @@ DWORD WINAPI GetDataThreadProc(PVOID pParam)//获取温度占用硬盘线程
 				{
 					GetAdaptersAddressesT = (pfnGetAdaptersAddresses)GetProcAddress(hIphlpapi, "GetAdaptersAddresses");
 					getIfTable2 = (pfnGetIfTable2)GetProcAddress(hIphlpapi, "GetIfTable2");
-					if(getIfTable2==NULL)
+					if (getIfTable2 == NULL)
 						GetIfTableT = (pfnGetIfTable)GetProcAddress(hIphlpapi, "GetIfTable");
+					else
+						freeMibTable = (pfnFreeMibTable)GetProcAddress(hIphlpapi, "FreeMibTable");
 				}
 			}
 			if (hIphlpapi)
@@ -1369,6 +1371,7 @@ DWORD WINAPI GetDataThreadProc(PVOID pParam)//获取温度占用硬盘线程
 								paa = paa->Next;
 							}
 						}
+						freeMibTable(mit2);
 					}
 					else
 					{
