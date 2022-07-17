@@ -199,7 +199,7 @@
       <StackReserveSize>
       </StackReserveSize>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>user32.dll;gdi32.dll;advapi32.dll;gdiplus.dll;OLEAUT32.dll;ole32.dll;</DelayLoadDLLs>
+      <DelayLoadDLLs>user32.dll;gdi32.dll;advapi32.dll;OLEAUT32.dll;ole32.dll;</DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <MergeSections>.rdata=.text</MergeSections>

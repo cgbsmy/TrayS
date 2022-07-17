@@ -1552,12 +1552,12 @@ BOOL GetOKXPrice(LPTSTR szName, LPTSTR szWeb, float* fOutLast, float* fOutOpen, 
 	// Specify an HTTP server.
 	if (hSession)
 		hConnect = winHttpConnect(hSession, szWeb,
-			INTERNET_DEFAULT_HTTP_PORT, 0);
+			INTERNET_DEFAULT_PORT, 0);
 	WCHAR szGet[256] = L"/api/v5/market/ticker?instId=";
 	lstrcat(szGet, szName);
 	// Create an HTTP request handle.
 	if (hConnect)
-		hRequest = winHttpOpenRequest(hConnect, L"GET", szGet,NULL, L"http://vip.stock.finance.sina.com.cn/",WINHTTP_DEFAULT_ACCEPT_TYPES,WINHTTP_FLAG_REFRESH);
+		hRequest = winHttpOpenRequest(hConnect, L"GET", szGet,NULL, L"https://www.okx.com/",WINHTTP_DEFAULT_ACCEPT_TYPES,WINHTTP_FLAG_REFRESH);
 
 	// Send a request.
 	if (hRequest)
@@ -1648,7 +1648,7 @@ BOOL GetSinaPrice(LPTSTR szName, float* fOutLast, float* fOutOpen, WCHAR* szOutL
 	// Specify an HTTP server.
 	if (hSession)
 		hConnect = winHttpConnect(hSession, L"hq.sinajs.cn",
-			INTERNET_DEFAULT_HTTP_PORT, 0);
+			INTERNET_DEFAULT_PORT, 0);
 	WCHAR szGet[256] = L"/list=";
 	lstrcat(szGet, szName);
 	// Create an HTTP request handle.

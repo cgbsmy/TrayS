@@ -199,7 +199,7 @@ typedef struct _TRAYSAVE//默认参数
 	int iPos;//任务栏图标位置
 	int iUnit;//流量单位
 	BOOL bTrayIcon;//显示托盘图标
-	BOOL bMonitor;//显示主窗口
+	BOOL bMonitor;//显示监控主窗口
 	BOOL bMonitorLeft;//左上显示窗口
 	BOOL bMonitorFloat;//浮动显示窗口
 	BOOL bMonitorTransparent;//鼠标穿透//透明显示窗口
@@ -253,6 +253,7 @@ typedef struct _TRAYSAVE//默认参数
 	WCHAR szOKXWeb[32];
 	BOOL bTwoFour;
 	COLORREF cPriceColor[4];//行情颜色
+	BOOL bTrayStyle;//任务栏风格开关
 }TRAYSAVE;
 TRAYSAVE TraySave = {
 	116,
@@ -309,14 +310,15 @@ TRAYSAVE TraySave = {
 	{0},
 	{0},
 	{0},
-	L"BTC-USDT-SWAP",
-	L"ETH-USDT-SWAP",
 	L"sh000001",
 	L"sz399001",
+	L"BTC-USDT-SWAP",
+	L"ETH-USDT-SWAP",
 	{0,0,1,1},
-	L"www.ouyicn.mobi",
+	L"www.okx.com",
 	FALSE,
-	{RGB(0, 168, 0), RGB(255, 0, 0),RGB(0,255,128),RGB(255,128,0)}
+	{RGB(0, 168, 0), RGB(255, 0, 0),RGB(0,255,128),RGB(255,128,0)},
+	TRUE
 };
 int wTraffic;//流量宽度
 int wTemperature;//温度宽度
